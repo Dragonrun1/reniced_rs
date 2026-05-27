@@ -25,6 +25,7 @@ fn main() -> Result<()> {
     }
 
     for process in &processes {
+        #[allow(unused_variables)]
         if let Err(error) = apply_rules(process, &rules, &cli) {
             eprintln!(
                 "failed processing pid {} ({}): {}",
