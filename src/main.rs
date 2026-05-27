@@ -10,20 +10,24 @@ use reniced::process::read_processes;
 
 fn main() -> Result<()> {
     let cli = Cli::parse_args();
-
     let rulefile = find_rulefile(&cli)?;
     let rules = read_rules(&rulefile)?;
-
     if rules.is_empty() {
         return Ok(());
     }
 
     let processes = read_processes(cli.threads)?;
-
     if processes.is_empty() {
         return Ok(());
     }
 
+    if cli.verbose {
+        println!(
+            "loaded {} rules and {} processes",
+            rules.len(),
+            processes.len(),
+        );
+    }
     for process in &processes {
         #[allow(unused_variables)]
         if let Err(error) = apply_rules(process, &rules, &cli) {
@@ -33,6 +37,5 @@ fn main() -> Result<()> {
             );
         }
     }
-
     Ok(())
 }
