@@ -20,4 +20,12 @@ pub enum IoClass {
 pub struct ProcessEntry {
     pub pid: i32,
     pub cmd: String,
+    pub name: String,
+    pub kind: ProcessKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum ProcessKind {
+    Process,
+    Thread,
 }

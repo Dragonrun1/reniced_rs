@@ -1,10 +1,10 @@
 use std::fs;
 
 use anyhow::Result;
-use libc;
 
-use crate::cli::Cli;
+use crate::cli::{Cli, MatchTarget};
 use crate::model::{IoClass, ProcessEntry, Rule};
+use crate::platform::set_process_priority;
 
 const IOPRIO_WHO_PROCESS: libc::c_int = 1;
 
@@ -14,7 +14,12 @@ fn ioprio_value(class: u16, data: u16) -> libc::c_int {
 
 pub fn apply_rules(process: &ProcessEntry, rules: &[Rule], cli: &Cli) -> Result<()> {
     for rule in rules {
-        if !rule.regex.is_match(&process.cmd) {
+        let target = match cli.match_target {
+            MatchTarget::Name => &process.name,
+            MatchTarget::Cmdline => &process.cmd,
+        };
+
+        if !rule.regex.is_match(target) {
             continue;
         }
 
@@ -37,7 +42,6 @@ pub fn apply_rules(process: &ProcessEntry, rules: &[Rule], cli: &Cli) -> Result<
 fn set_priority(process: &ProcessEntry, nice: i32, cli: &Cli) -> Result<()> {
     if cli.noop {
         println!("would set priority of {} to {}", process.pid, nice);
-
         return Ok(());
     }
 
@@ -45,15 +49,6 @@ fn set_priority(process: &ProcessEntry, nice: i32, cli: &Cli) -> Result<()> {
 
     if cli.verbose {
         println!("nice set to {}: {}/{}", nice, process.pid, process.cmd);
-    }
-
-    Ok(())
-}
-
-fn set_process_priority(pid: i32, nice: i32) -> Result<()> {
-    let result = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid as libc::id_t, nice) };
-    if result == -1 {
-        return Err(std::io::Error::last_os_error().into());
     }
 
     Ok(())
