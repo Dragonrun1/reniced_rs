@@ -1,7 +1,7 @@
 use std::fs;
 
 use anyhow::Result;
-use nix::{errno::Errno, libc};
+use libc;
 
 use crate::cli::Cli;
 use crate::model::{IoClass, ProcessEntry, Rule};
@@ -52,8 +52,9 @@ fn set_priority(process: &ProcessEntry, nice: i32, cli: &Cli) -> Result<()> {
 
 fn set_process_priority(pid: i32, nice: i32) -> Result<()> {
     let result = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid as libc::id_t, nice) };
-
-    Errno::result(result)?;
+    if result == -1 {
+        return Err(std::io::Error::last_os_error().into());
+    }
 
     Ok(())
 }
