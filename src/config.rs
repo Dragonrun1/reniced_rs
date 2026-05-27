@@ -2,18 +2,18 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use nix::unistd::Uid;
 use regex::Regex;
 
 use crate::cli::Cli;
 use crate::model::{IoClass, Rule};
+use crate::platform::is_privileged;
 
 pub fn find_rulefile(cli: &Cli) -> Result<PathBuf> {
     if let Some(path) = &cli.configfile {
         return Ok(path.clone());
     }
 
-    if Uid::effective().is_root() {
+    if is_privileged() {
         return Ok(PathBuf::from("/etc/reniced.conf"));
     }
 
