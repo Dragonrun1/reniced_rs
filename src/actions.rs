@@ -1,24 +1,14 @@
 use std::fs;
 
 use anyhow::Result;
-use nix::{
-    errno::Errno,
-    libc,
-};
+use nix::{errno::Errno, libc};
 
 use crate::cli::Cli;
-use crate::model::{
-    IoClass,
-    ProcessEntry,
-    Rule,
-};
+use crate::model::{IoClass, ProcessEntry, Rule};
 
 const IOPRIO_WHO_PROCESS: libc::c_int = 1;
 
-fn ioprio_value(
-    class: u16,
-    data: u16,
-) -> libc::c_int {
+fn ioprio_value(class: u16, data: u16) -> libc::c_int {
     ((class << 13) | data) as libc::c_int
 }
 
@@ -54,39 +44,21 @@ fn set_priority(process: &ProcessEntry, nice: i32, cli: &Cli) -> Result<()> {
     set_process_priority(process.pid, nice)?;
 
     if cli.verbose {
-        println!(
-            "nice set to {}: {}/{}",
-            nice,
-            process.pid,
-            process.cmd
-        );
+        println!("nice set to {}: {}/{}", nice, process.pid, process.cmd);
     }
 
     Ok(())
 }
 
-fn set_process_priority(
-    pid: i32,
-    nice: i32,
-) -> Result<()> {
-    let result = unsafe {
-        libc::setpriority(
-            libc::PRIO_PROCESS,
-            pid as libc::id_t,
-            nice,
-        )
-    };
+fn set_process_priority(pid: i32, nice: i32) -> Result<()> {
+    let result = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid as libc::id_t, nice) };
 
     Errno::result(result)?;
 
     Ok(())
 }
 
-fn adjust_oom(
-    process: &ProcessEntry,
-    score: i32,
-    cli: &Cli,
-) -> Result<()> {
+fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
     let converted = convert_oom_adj(score);
 
     if cli.noop {
@@ -145,24 +117,13 @@ fn set_io_priority(
 
     let data = u16::from(level.unwrap_or(0));
 
-    let prio = ioprio_value(
-        class_num as u16,
-        data,
-    );
+    let prio = ioprio_value(class_num as u16, data);
 
-    let result = unsafe {
-        libc::syscall(
-            libc::SYS_ioprio_set,
-            IOPRIO_WHO_PROCESS,
-            process.pid,
-            prio,
-        )
-    };
+    let result =
+        unsafe { libc::syscall(libc::SYS_ioprio_set, IOPRIO_WHO_PROCESS, process.pid, prio) };
 
     if result != 0 {
-        return Err(
-            std::io::Error::last_os_error().into()
-        );
+        return Err(std::io::Error::last_os_error().into());
     }
 
     if cli.verbose {

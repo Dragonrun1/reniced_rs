@@ -1,25 +1,14 @@
 use anyhow::Result;
 use nix::unistd::Uid;
-use procfs::process::{
-    Process as ProcfsProcess,
-    Task,
-};
+use procfs::process::{Process as ProcfsProcess, Task};
 
 use crate::model::ProcessEntry;
 
-pub fn read_processes(
-    include_threads: bool,
-) -> Result<Vec<ProcessEntry>> {
+pub fn read_processes(include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut entries = Vec::new();
 
-    for process in procfs::process::all_processes()?
-        .flatten()
-    {
-        collect_process(
-            &process,
-            include_threads,
-            &mut entries,
-        )?;
+    for process in procfs::process::all_processes()?.flatten() {
+        collect_process(&process, include_threads, &mut entries)?;
     }
 
     Ok(entries)
@@ -34,9 +23,7 @@ fn collect_process(
 
     let current_uid = Uid::effective();
 
-    if !current_uid.is_root()
-        && owner_uid != current_uid.into()
-    {
+    if !current_uid.is_root() && owner_uid != current_uid.into() {
         return Ok(());
     }
 
@@ -67,21 +54,15 @@ fn collect_threads(
             continue;
         }
 
-        let cmd = thread_name(&task)
-            .unwrap_or_else(|_| fallback_cmd.to_string());
+        let cmd = thread_name(&task).unwrap_or_else(|_| fallback_cmd.to_string());
 
-        entries.push(ProcessEntry {
-            pid: tid,
-            cmd,
-        });
+        entries.push(ProcessEntry { pid: tid, cmd });
     }
 
     Ok(())
 }
 
-fn process_name(
-    process: &ProcfsProcess,
-) -> Result<String> {
+fn process_name(process: &ProcfsProcess) -> Result<String> {
     Ok(process.stat()?.comm)
 }
 

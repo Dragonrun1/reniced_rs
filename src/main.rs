@@ -5,10 +5,7 @@ use anyhow::Result;
 
 use reniced::actions::apply_rules;
 use reniced::cli::Cli;
-use reniced::config::{
-    find_rulefile,
-    read_rules,
-};
+use reniced::config::{find_rulefile, read_rules};
 use reniced::process::read_processes;
 
 fn main() -> Result<()> {
@@ -28,14 +25,10 @@ fn main() -> Result<()> {
     }
 
     for process in &processes {
-        if let Err(error) =
-            apply_rules(process, &rules, &cli)
-        {
+        if let Err(error) = apply_rules(process, &rules, &cli) {
             eprintln!(
                 "failed processing pid {} ({}): {}",
-                process.pid,
-                process.cmd,
-                error,
+                process.pid, process.cmd, error,
             );
         }
     }

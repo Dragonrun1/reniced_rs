@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use nix::unistd::Uid;
 use regex::Regex;
 
@@ -17,20 +17,14 @@ pub fn find_rulefile(cli: &Cli) -> Result<PathBuf> {
         return Ok(PathBuf::from("/etc/reniced.conf"));
     }
 
-    let home = std::env::var("HOME")
-        .context("HOME environment variable not set")?;
+    let home = std::env::var("HOME").context("HOME environment variable not set")?;
 
     Ok(PathBuf::from(home).join(".reniced"))
 }
 
 pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
     let content = fs::read_to_string(path)
-        .with_context(|| {
-            format!(
-                "failed to read config file {}",
-                path.display()
-            )
-        })?;
+        .with_context(|| format!("failed to read config file {}", path.display()))?;
 
     let mut rules = Vec::new();
 
@@ -41,24 +35,13 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
             continue;
         }
 
-        let Some((command, regex_str)) =
-            line.split_once(char::is_whitespace)
-        else {
-            eprintln!(
-                "invalid rule line {}: {}",
-                idx + 1,
-                line
-            );
+        let Some((command, regex_str)) = line.split_once(char::is_whitespace) else {
+            eprintln!("invalid rule line {}: {}", idx + 1, line);
             continue;
         };
 
-        let rule = parse_rule(
-            command,
-            regex_str.trim(),
-        )
-        .with_context(|| {
-            format!("failed parsing rule {}", idx + 1)
-        })?;
+        let rule = parse_rule(command, regex_str.trim())
+            .with_context(|| format!("failed parsing rule {}", idx + 1))?;
 
         rules.push(rule);
     }
@@ -66,18 +49,10 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
     Ok(rules)
 }
 
-pub fn parse_rule(
-    command: &str,
-    regex_str: &str,
-) -> Result<Rule> {
+pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
     let mut command = command.to_string();
 
-    if command.starts_with('-')
-        || command
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_ascii_digit())
-    {
+    if command.starts_with('-') || command.chars().next().is_some_and(|c| c.is_ascii_digit()) {
         command = format!("n{command}");
     }
 
@@ -86,9 +61,7 @@ pub fn parse_rule(
     let mut io_class = None;
     let mut io_nice = None;
 
-    let token_re = Regex::new(
-        r"(n-?\d+|o-?\d+|[rbi]\d*)",
-    )?;
+    let token_re = Regex::new(r"(n-?\d+|o-?\d+|[rbi]\d*)")?;
 
     for token in token_re.find_iter(&command) {
         let token = token.as_str();
@@ -105,9 +78,7 @@ pub fn parse_rule(
 
         let mut chars = token.chars();
 
-        let prefix = chars
-            .next()
-            .context("missing IO class")?;
+        let prefix = chars.next().context("missing IO class")?;
 
         let value = chars.as_str();
 
