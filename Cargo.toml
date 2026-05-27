@@ -1,0 +1,18 @@
+[package]
+name = "reniced"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2-or-later"
+description = "Renice processes using regex rules"
+
+[dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.6.1", features = ["derive"] }
+nix = { version = "0.31.3", features = ["resource", "user"] }
+procfs = "0.18.0"
+regex = "1.12.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
