@@ -8,11 +8,24 @@ description = "Renice processes using regex rules"
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive"] }
-nix = { version = "0.31.3", features = ["resource", "user"] }
-procfs = "0.18.0"
+libc = "0.2.186"
 regex = "1.12.3"
+sysinfo = "0.39.2"
+
+[features]
+default = ["linux-extensions"]
+
+linux-extensions = []
 
 [profile.release]
 lto = true
 codegen-units = 1
 strip = true
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.62.2"
+features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_Security",
+]
