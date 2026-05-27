@@ -1,6 +1,12 @@
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+
+#[derive(Clone, Debug, ValueEnum)]
+pub enum MatchTarget {
+    Name,
+    Cmdline,
+}
 
 #[derive(Debug, Parser)]
 #[command(name = "reniced")]
@@ -17,6 +23,15 @@ pub struct Cli {
     /// Include threads/tasks
     #[arg(long)]
     pub threads: bool,
+
+    /// Match target
+    #[arg(
+        short = 'o',
+        long,
+        value_enum,
+        default_value = "name",
+    )]
+    pub match_target: MatchTarget,
 
     /// Alternate config file
     pub configfile: Option<PathBuf>,
