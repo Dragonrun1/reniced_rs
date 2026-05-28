@@ -18,6 +18,7 @@ pub fn collect_threads(pid: i32, system: &System) -> Vec<ProcessEntry> {
                             .join(OsStr::new(" "))
                             .to_string_lossy()
                             .into_owned(),
+                        exe: thread.exe().map(|p| p.to_string_lossy().into_owned()),
                         kind: ProcessKind::Thread,
                     });
                 }

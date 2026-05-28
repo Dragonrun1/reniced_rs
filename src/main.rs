@@ -24,6 +24,7 @@ fn main() -> Result<()> {
     }
 
     // Non-Linux: Exit immediately as threads are unsupported
+    #[cfg(not(target_os="linux"))]
     if cli.threads {
         eprintln!("error: --threads is only supported on Linux.");
         eprintln!("hint: run on a Linux system to enable thread scanning.");

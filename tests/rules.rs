@@ -10,3 +10,11 @@ fn parses_combined_rule() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn rejects_rule_with_no_actions() {
+    let result = parse_rule("xyz", "someprocess");
+    assert!(result.is_err());
+    let msg = format!("{}", result.unwrap_err());
+    assert!(msg.contains("no recognised actions"));
+}

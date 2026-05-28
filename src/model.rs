@@ -21,6 +21,7 @@ pub struct ProcessEntry {
     pub pid: i32,
     pub cmd: String,
     pub name: String,
+    pub exe: Option<String>,
     pub kind: ProcessKind,
 }
 

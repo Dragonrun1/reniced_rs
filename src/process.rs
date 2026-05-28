@@ -22,6 +22,7 @@ pub fn read_processes(include_threads: bool) -> Result<Vec<ProcessEntry>> {
                 .join(OsStr::new(" "))
                 .to_string_lossy()
                 .into_owned(),
+            exe: process.exe().map(|p| p.to_string_lossy().into_owned()),
             kind: ProcessKind::Process,
         });
 

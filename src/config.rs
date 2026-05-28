@@ -40,10 +40,10 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
             continue;
         };
 
-        let rule = parse_rule(command, regex_str.trim())
-            .with_context(|| format!("failed parsing rule {}", idx + 1))?;
-
-        rules.push(rule);
+        match parse_rule(command, regex_str.trim()) {
+            Ok(rule) => rules.push(rule),
+            Err(e) => eprintln!("rule line #{} skipped: {}", idx + 1, e),
+        }
     }
 
     Ok(rules)
@@ -92,6 +92,10 @@ pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
         if !value.is_empty() {
             io_nice = Some(value.parse()?);
         }
+    }
+
+    if nice.is_none() && oom_adj.is_none() && io_class.is_none() {
+        bail!("no recognised actions (nice/oom/ionice) in command '{}'", command);
     }
 
     Ok(Rule {
