@@ -8,9 +8,17 @@ description = "Renice processes using regex rules"
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive"] }
+env_logger = { version = "0.11.10", default-features = false, features = ["auto-color"] }
 libc = "0.2.186"
+log = "0.4.30"
 regex = "1.12.3"
 sysinfo = "0.39.2"
+
+[target.'cfg(unix)'.dependencies]
+syslog = "7"
+
+[target.'cfg(windows)'.dependencies]
+winlog = "0.2"
 
 [features]
 default = ["linux-extensions"]

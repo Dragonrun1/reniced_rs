@@ -2,6 +2,8 @@ use std::fs;
 
 use anyhow::Result;
 
+use log::info;
+
 use crate::cli::{Cli, MatchTarget};
 use crate::model::{IoClass, ProcessEntry, Rule};
 use crate::platform::set_process_priority;
@@ -45,14 +47,14 @@ pub fn apply_rules(process: &ProcessEntry, rules: &[Rule], cli: &Cli) -> Result<
 
 fn set_priority(process: &ProcessEntry, nice: i32, cli: &Cli) -> Result<()> {
     if cli.noop {
-        println!("would set priority of {} to {}", process.pid, nice);
+        info!("would set priority of {} to {}", process.pid, nice);
         return Ok(());
     }
 
     set_process_priority(process.pid, nice)?;
 
     if cli.verbose {
-        println!("nice set to {}: {}/{}", nice, process.pid, process.cmd);
+        info!("nice set to {}: {}/{}", nice, process.pid, process.cmd);
     }
 
     Ok(())
@@ -62,7 +64,7 @@ fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
     let converted = convert_oom_adj(score);
 
     if cli.noop {
-        println!(
+        info!(
             "would adjust OOM setting of pid {} to {}",
             process.pid, converted
         );
@@ -76,10 +78,7 @@ fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
         .map_err(|error| anyhow::anyhow!("failed writing {}: {}", path, error,))?;
 
     if cli.verbose {
-        println!(
-            "OOM adjust set to {}: {}/{}",
-            converted, process.pid, process.cmd
-        );
+        info!("OOM adjust set to {}: {}/{}", converted, process.pid, process.cmd);
     }
 
     Ok(())
@@ -88,7 +87,7 @@ fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
 #[cfg(target_os = "linux")]
 mod io_priority {
     use anyhow::Result;
-
+    use log::info;
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
 
@@ -112,11 +111,11 @@ mod io_priority {
 
         if cli.noop {
             match level {
-                Some(level) => println!(
+                Some(level) => info!(
                     "would set IO priority for pid {} to class {} level {}",
                     process.pid, class_num, level,
                 ),
-                None => println!(
+                None => info!(
                     "would set IO priority for pid {} to class {}",
                     process.pid, class_num,
                 ),
@@ -142,11 +141,11 @@ mod io_priority {
                 IoClass::Idle => "idle",
             };
             match level {
-                Some(level) => println!(
+                Some(level) => info!(
                     "ionice set to {}, class {}: {}/{}",
                     class_name, level, process.pid, process.cmd,
                 ),
-                None => println!(
+                None => info!(
                     "ionice set to {}: {}/{}",
                     class_name, process.pid, process.cmd,
                 ),
@@ -160,7 +159,7 @@ mod io_priority {
 #[cfg(windows)]
 mod io_priority {
     use anyhow::Result;
-
+    use log::info;
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
     use crate::platform::set_io_priority as platform_set_io_priority;
@@ -179,7 +178,7 @@ mod io_priority {
         };
 
         if cli.noop {
-            println!(
+            info!(
                 "would set IO priority for pid {} to {} (Windows IO hint)",
                 process.pid, class_name,
             );
@@ -192,7 +191,7 @@ mod io_priority {
             ))?;
 
         if cli.verbose {
-            println!(
+            info!(
                 "IO priority set to {}: {}/{}",
                 class_name, process.pid, process.cmd,
             );
@@ -208,9 +207,8 @@ mod io_priority {
 #[cfg(all(unix, not(target_os = "linux")))]
 mod io_priority {
     use std::sync::OnceLock;
-
     use anyhow::Result;
-
+    use log::{info, warn};
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
 
@@ -223,10 +221,7 @@ mod io_priority {
         _cli: &Cli,
     ) -> Result<()> {
         IO_PRIO_WARNED.get_or_init(|| {
-            eprintln!(
-                "warning: IO priority rules are not supported on this platform; \
-                 IO priority rules will be skipped"
-            );
+            warn!("IO priority rules are not supported on this platform; IO priority rules will be skipped");
         });
         Ok(())
     }

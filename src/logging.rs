@@ -1,0 +1,81 @@
+use anyhow::{Context, Result};
+use log::LevelFilter;
+
+use crate::cli::LogTarget;
+
+pub fn init(target: &LogTarget, verbose: bool) -> Result<()> {
+    let level = if verbose {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Warn
+    };
+
+    match target {
+        LogTarget::Stderr => init_stderr(level),
+        LogTarget::System => init_system(level),
+    }
+}
+
+fn init_stderr(level: LevelFilter) -> Result<()> {
+    env_logger::Builder::new()
+        .filter_level(level)
+        // Match the terse output style of the original Perl code —
+        // no timestamps, no module paths, just the message.
+        .format_timestamp(None)
+        .format_module_path(false)
+        .format_target(false)
+        // Prefix warn/error with the level so it's clear in a terminal;
+        // info/debug are noop-mode and verbose output so no prefix needed.
+        .format_level(true)
+        .try_init()
+        .context("failed to initialise stderr logger")
+}
+
+#[cfg(unix)]
+fn init_system(level: LevelFilter) -> Result<()> {
+    use syslog::{BasicLogger, Facility, Formatter3164};
+
+    let formatter = Formatter3164 {
+        facility: Facility::LOG_DAEMON,
+        hostname: None,
+        process: "reniced".into(),
+        pid: std::process::id(),
+    };
+
+    let logger = syslog::unix(formatter)
+        .context("failed to connect to syslog")?;
+
+    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .context("failed to register syslog logger")?;
+
+    log::set_max_level(level);
+
+    Ok(())
+}
+
+#[cfg(windows)]
+fn init_system(level: LevelFilter) -> Result<()> {
+    // The Windows Event Log source must be registered before first use.
+    // winlog::register is idempotent and succeeds silently if already present.
+    // It requires elevation; if it fails we fall back to stderr with a warning
+    // rather than aborting — the tool can still run, just without Event Log.
+    if let Err(e) = winlog::register("reniced") {
+        eprintln!(
+            "warning: could not register Windows Event Log source \
+             (run once as Administrator to suppress this): {e}"
+        );
+        return init_stderr(level);
+    }
+
+    winlog::init("reniced")
+        .context("failed to initialise Windows Event Log logger")?;
+
+    log::set_max_level(level);
+
+    Ok(())
+}
+
+// FreeBSD, OpenBSD, and any other non-Linux Unix currently lack a syslog
+// backend distinct from the Unix one above.
+// The syslog crate uses the same Unix domain socket path on all *nix systems,
+// so the cfg(unix) arm covers all of them.

@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use log::warn;
 use regex::Regex;
 
 use crate::cli::Cli;
@@ -36,13 +37,13 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
         }
 
         let Some((command, regex_str)) = line.split_once(char::is_whitespace) else {
-            eprintln!("invalid rule line {}: {}", idx + 1, line);
+            warn!("rule line #{} skipped: no command/regex separation found", idx + 1);
             continue;
         };
 
         match parse_rule(command, regex_str.trim()) {
             Ok(rule) => rules.push(rule),
-            Err(e) => eprintln!("rule line #{} skipped: {}", idx + 1, e),
+            Err(e) => warn!("rule line #{} skipped: {}", idx + 1, e),
         }
     }
 
