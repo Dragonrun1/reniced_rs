@@ -3,6 +3,7 @@ name = "reniced"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-2-or-later"
+license-file = "LICENSE.md"
 description = "Renice processes using regex rules"
 
 [dependencies]
