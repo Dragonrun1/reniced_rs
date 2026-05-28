@@ -13,12 +13,17 @@ libc = "0.2.186"
 log = "0.4.30"
 regex = "1.12.3"
 sysinfo = "0.39.2"
+thiserror = "2.0.18"
 
 [target.'cfg(unix)'.dependencies]
 syslog = "7"
 
 [target.'cfg(windows)'.dependencies]
 winlog = "0.2"
+
+[dev-dependencies]
+libc = "0.2.186"
+tempfile = "3"
 
 [features]
 default = ["linux-extensions"]
