@@ -17,7 +17,10 @@ pub fn init(target: &LogTarget, verbose: bool) -> Result<()> {
 }
 
 fn init_stderr(level: LevelFilter) -> Result<()> {
-    env_logger::Builder::new()
+    // Register the logger once; subsequent calls (e.g. in tests) will get
+    // SetLoggerError which we ignore — the important thing is that the level
+    // is always updated, so we set it unconditionally after the init attempt.
+    let _ = env_logger::Builder::new()
         .filter_level(level)
         // Match the terse output style of the original Perl code —
         // no timestamps, no module paths, just the message.
@@ -27,8 +30,13 @@ fn init_stderr(level: LevelFilter) -> Result<()> {
         // Prefix warn/error with the level so it's clear in a terminal;
         // info/debug are noop-mode and verbose output so no prefix needed.
         .format_level(true)
-        .try_init()
-        .context("failed to initialise stderr logger")
+        .try_init();
+
+    // Always update the max level regardless of whether init succeeded.
+    // This is safe to call multiple times and is what the tests rely on.
+    log::set_max_level(level);
+
+    Ok(())
 }
 
 #[cfg(unix)]
@@ -75,7 +83,7 @@ fn init_system(level: LevelFilter) -> Result<()> {
     Ok(())
 }
 
-// FreeBSD, OpenBSD, and any other non-Linux Unix currently lack a syslog
-// backend distinct from the Unix one above.
-// The syslog crate uses the same Unix domain socket path on all *nix systems,
-// so the cfg(unix) arm covers all of them.
+// FreeBSD, OpenBSD, and any other non-Linux Unix currently lacks a syslog
+// backend distinct from the Unix one above — the syslog crate uses the same
+// Unix domain socket path on all *nix systems, so the cfg(unix) arm covers
+// all of them.

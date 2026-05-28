@@ -1,9 +1,23 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use log::warn;
 use regex::Regex;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ParseRuleError {
+    #[error("no recognised actions (nice/oom/ionice) in command '{0}'")]
+    NoActions(String),
+    #[error("invalid regex '{pattern}': {source}")]
+    InvalidRegex {
+        pattern: String,
+        source: regex::Error,
+    },
+    #[error("invalid number in command: {0}")]
+    InvalidNumber(#[from] std::num::ParseIntError),
+}
 
 use crate::cli::Cli;
 use crate::model::{IoClass, Rule};
@@ -37,7 +51,10 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
         }
 
         let Some((command, regex_str)) = line.split_once(char::is_whitespace) else {
-            warn!("rule line #{} skipped: no command/regex separation found", idx + 1);
+            warn!(
+                "rule line #{} skipped: no command/regex separation found",
+                idx + 1
+            );
             continue;
         };
 
@@ -50,7 +67,7 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
     Ok(rules)
 }
 
-pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
+pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule, ParseRuleError> {
     let mut command = command.to_string();
 
     if command.starts_with('-') || command.chars().next().is_some_and(|c| c.is_ascii_digit()) {
@@ -62,7 +79,7 @@ pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
     let mut io_class = None;
     let mut io_nice = None;
 
-    let token_re = Regex::new(r"(n-?\d+|o-?\d+|[rbi]\d*)")?;
+    let token_re = Regex::new(r"(n-?\d+|o-?\d+|[rbi]\d*)").unwrap();
 
     for token in token_re.find_iter(&command) {
         let token = token.as_str();
@@ -79,7 +96,13 @@ pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
 
         let mut chars = token.chars();
 
-        let prefix = chars.next().context("missing IO class")?;
+        // token_re only matches [rbi]\d* after the n/o prefixes are consumed
+        // above, so next() always yields r, b, or i here. unreachable! below
+        // documents the invariant so any future regex change that breaks it
+        // fails loudly in debug builds rather than silently doing the wrong thing.
+        let prefix = chars.next().unwrap_or_else(|| {
+            unreachable!("token_re matched an empty IO class token");
+        });
 
         let value = chars.as_str();
 
@@ -87,7 +110,10 @@ pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
             'r' => io_class = Some(IoClass::Realtime),
             'b' => io_class = Some(IoClass::BestEffort),
             'i' => io_class = Some(IoClass::Idle),
-            _ => bail!("unknown IO class"),
+            _ => unreachable!(
+                "token_re produced IO class prefix {:?} which is not r/b/i — regex and match are out of sync",
+                prefix
+            ),
         }
 
         if !value.is_empty() {
@@ -96,11 +122,14 @@ pub fn parse_rule(command: &str, regex_str: &str) -> Result<Rule> {
     }
 
     if nice.is_none() && oom_adj.is_none() && io_class.is_none() {
-        bail!("no recognised actions (nice/oom/ionice) in command '{}'", command);
+        return Err(ParseRuleError::NoActions(command));
     }
 
     Ok(Rule {
-        regex: Regex::new(regex_str)?,
+        regex: Regex::new(regex_str).map_err(|e| ParseRuleError::InvalidRegex {
+            pattern: regex_str.to_string(),
+            source: e,
+        })?,
         nice,
         oom_adj,
         io_class,
