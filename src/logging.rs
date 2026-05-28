@@ -1,3 +1,25 @@
+// SPDX-FileCopyrightText: 2026 Michael Cummings <mgcummings@yahoo.com>
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+// ///////////////////////////////////////////////////////////////////////////
+// reniced_rs - A Rust library for renicing processes
+//
+// Copyright (C) 2026  Michael Cummings
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, see <https://www.gnu.org/licenses/>.
+// ///////////////////////////////////////////////////////////////////////////
+
 use anyhow::{Context, Result};
 use log::LevelFilter;
 
@@ -50,8 +72,7 @@ fn init_system(level: LevelFilter) -> Result<()> {
         pid: std::process::id(),
     };
 
-    let logger = syslog::unix(formatter)
-        .context("failed to connect to syslog")?;
+    let logger = syslog::unix(formatter).context("failed to connect to syslog")?;
 
     log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
         .context("failed to register syslog logger")?;
@@ -75,8 +96,7 @@ fn init_system(level: LevelFilter) -> Result<()> {
         return init_stderr(level);
     }
 
-    winlog::init("reniced")
-        .context("failed to initialise Windows Event Log logger")?;
+    winlog::init("reniced").context("failed to initialise Windows Event Log logger")?;
 
     log::set_max_level(level);
 

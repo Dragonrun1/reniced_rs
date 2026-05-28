@@ -1,3 +1,25 @@
+// SPDX-FileCopyrightText: 2026 Michael Cummings <mgcummings@yahoo.com>
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+// ///////////////////////////////////////////////////////////////////////////
+// reniced_rs - A Rust library for renicing processes
+//
+// Copyright (C) 2026  Michael Cummings
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, see <https://www.gnu.org/licenses/>.
+// ///////////////////////////////////////////////////////////////////////////
+
 use std::fs;
 
 use anyhow::Result;
@@ -78,7 +100,10 @@ fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
         .map_err(|error| anyhow::anyhow!("failed writing {}: {}", path, error,))?;
 
     if cli.verbose {
-        info!("OOM adjust set to {}: {}/{}", converted, process.pid, process.cmd);
+        info!(
+            "OOM adjust set to {}: {}/{}",
+            converted, process.pid, process.cmd
+        );
     }
 
     Ok(())
@@ -86,10 +111,10 @@ fn adjust_oom(process: &ProcessEntry, score: i32, cli: &Cli) -> Result<()> {
 
 #[cfg(target_os = "linux")]
 mod io_priority {
-    use anyhow::Result;
-    use log::info;
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
+    use anyhow::Result;
+    use log::info;
 
     const IOPRIO_WHO_PROCESS: libc::c_int = 1;
 
@@ -126,9 +151,8 @@ mod io_priority {
         let data = u16::from(level.unwrap_or(0));
         let prio = ioprio_value(class_num, data);
 
-        let result = unsafe {
-            libc::syscall(libc::SYS_ioprio_set, IOPRIO_WHO_PROCESS, process.pid, prio)
-        };
+        let result =
+            unsafe { libc::syscall(libc::SYS_ioprio_set, IOPRIO_WHO_PROCESS, process.pid, prio) };
 
         if result != 0 {
             return Err(std::io::Error::last_os_error().into());
@@ -158,11 +182,11 @@ mod io_priority {
 
 #[cfg(windows)]
 mod io_priority {
-    use anyhow::Result;
-    use log::info;
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
     use crate::platform::set_io_priority as platform_set_io_priority;
+    use anyhow::Result;
+    use log::info;
 
     pub fn set_io_priority(
         process: &ProcessEntry,
@@ -172,9 +196,9 @@ mod io_priority {
     ) -> Result<()> {
         // Windows has no sub-class level, so _level is intentionally ignored.
         let class_name = match class {
-            IoClass::Realtime   => "high",
+            IoClass::Realtime => "high",
             IoClass::BestEffort => "normal",
-            IoClass::Idle       => "very-low (background)",
+            IoClass::Idle => "very-low (background)",
         };
 
         if cli.noop {
@@ -185,10 +209,9 @@ mod io_priority {
             return Ok(());
         }
 
-        platform_set_io_priority(process.pid, class)
-            .map_err(|e| anyhow::anyhow!(
-                "failed setting IO priority for pid {}: {}", process.pid, e
-            ))?;
+        platform_set_io_priority(process.pid, class).map_err(|e| {
+            anyhow::anyhow!("failed setting IO priority for pid {}: {}", process.pid, e)
+        })?;
 
         if cli.verbose {
             info!(
@@ -206,11 +229,11 @@ mod io_priority {
 // pids, so it is not useful for reniced's use case.
 #[cfg(all(unix, not(target_os = "linux")))]
 mod io_priority {
-    use std::sync::OnceLock;
-    use anyhow::Result;
-    use log::{info, warn};
     use crate::cli::Cli;
     use crate::model::{IoClass, ProcessEntry};
+    use anyhow::Result;
+    use log::{info, warn};
+    use std::sync::OnceLock;
 
     static IO_PRIO_WARNED: OnceLock<()> = OnceLock::new();
 
