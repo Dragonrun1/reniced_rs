@@ -1,14 +1,16 @@
 [package]
-name = "reniced"
-version = "0.1.0"
+description = "Renice processes using regex rules"
 edition = "2021"
 license = "GPL-2-or-later"
-license-file = "LICENSE.md"
-description = "Renice processes using regex rules"
+name = "reniced"
+version = "0.1.0"
+authors = ["Michael Cummings <mgcummings@yahoo.com>"]
 
 [dependencies]
 anyhow = "1.0.102"
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.6"
+clap-version-flag = "1.0.7"
 env_logger = { version = "0.11.10", default-features = false, features = ["auto-color"] }
 libc = "0.2.186"
 log = "0.4.30"
