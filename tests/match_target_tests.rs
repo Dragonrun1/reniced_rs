@@ -28,7 +28,9 @@
 
 use anyhow::Result;
 use reniced::actions::apply_rules;
-use reniced::cli::{Cli, LogTarget, MatchTarget};
+use clap::CommandFactory;
+use clap_complete::{Shell, generate};
+use reniced::cli::{Cli, Commands, LogTarget, MatchTarget};
 use reniced::config::parse_rule;
 use reniced::model::{ProcessEntry, ProcessKind};
 
@@ -274,4 +276,32 @@ fn verbose_noop_io_priority_idle_no_level() -> Result<()> {
     let proc = make_process("myproc", "myproc", Some("/usr/sbin/myproc"));
     apply_rules(&proc, &rules, &verbose_noop_cli(MatchTarget::Name))?;
     Ok(())
+}
+
+// ── completions subcommand ─────────────────────────────────────────────────
+
+#[test]
+fn completions_subcommand_recognised() {
+    // Verify the Commands enum is wired correctly and Shell variants parse.
+    let cmd = Cli {
+        command: Some(Commands::Completions { shell: Shell::Bash }),
+        noop: false,
+        verbose: false,
+        threads: false,
+        match_target: MatchTarget::Name,
+        log: LogTarget::Stderr,
+        configfile: None,
+    };
+    assert!(matches!(cmd.command, Some(Commands::Completions { shell: Shell::Bash })));
+}
+
+#[test]
+fn completions_generates_output_for_all_shells() {
+    use std::io::sink;
+
+    // generate() should not panic for any supported shell.
+    for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::PowerShell] {
+        let mut cmd = Cli::command();
+        generate(shell, &mut cmd, "reniced", &mut sink());
+    }
 }
