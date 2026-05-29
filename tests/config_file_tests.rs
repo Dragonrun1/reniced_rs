@@ -153,6 +153,7 @@ use std::path::PathBuf;
 
 fn cli_with_config(path: Option<PathBuf>) -> Cli {
     Cli {
+        command: None,
         noop: false,
         verbose: false,
         threads: false,

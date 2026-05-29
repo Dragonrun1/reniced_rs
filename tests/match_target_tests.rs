@@ -35,6 +35,7 @@ use reniced::model::{ProcessEntry, ProcessKind};
 /// Build a minimal no-op Cli with the given MatchTarget.
 fn noop_cli(target: MatchTarget) -> Cli {
     Cli {
+        command: None,
         noop: true,
         verbose: false,
         threads: false,
@@ -191,6 +192,7 @@ fn empty_rules_list_is_fine() -> Result<()> {
 
 fn verbose_noop_cli(target: MatchTarget) -> Cli {
     Cli {
+        command: None,
         noop: true,
         verbose: true,
         threads: false,
