@@ -159,7 +159,7 @@ fn cli_with_config(path: Option<PathBuf>) -> Cli {
         threads: false,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: path,
+        config: path,
     }
 }
 

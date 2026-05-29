@@ -39,7 +39,7 @@ fn noop_cli_with_config(path: std::path::PathBuf) -> Cli {
         threads: false,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: Some(path),
+        config: Some(path),
     }
 }
 
@@ -82,7 +82,7 @@ fn run_noop_verbose_returns_ok() -> Result<()> {
         threads: false,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: Some(f.path().to_path_buf()),
+        config: Some(f.path().to_path_buf()),
     };
     reniced::run(cli)?;
     Ok(())
@@ -131,7 +131,7 @@ fn run_threads_on_non_linux_returns_err() {
         threads: true,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: Some(f.path().to_path_buf()),
+        config: Some(f.path().to_path_buf()),
     };
     let result = reniced::run(cli);
     assert!(result.is_err());
@@ -153,7 +153,7 @@ fn run_threads_without_privilege_returns_err() {
         threads: true,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: Some(f.path().to_path_buf()),
+        config: Some(f.path().to_path_buf()),
     };
     let result = reniced::run(cli);
     assert!(result.is_err());

@@ -43,7 +43,7 @@ fn noop_cli(target: MatchTarget) -> Cli {
         threads: false,
         match_target: target,
         log: LogTarget::Stderr,
-        configfile: None,
+        config: None,
     }
 }
 
@@ -200,7 +200,7 @@ fn verbose_noop_cli(target: MatchTarget) -> Cli {
         threads: false,
         match_target: target,
         log: LogTarget::Stderr,
-        configfile: None,
+        config: None,
     }
 }
 
@@ -290,7 +290,7 @@ fn completions_subcommand_recognised() {
         threads: false,
         match_target: MatchTarget::Name,
         log: LogTarget::Stderr,
-        configfile: None,
+        config: None,
     };
     assert!(matches!(cmd.command, Some(Commands::Completions { shell: Shell::Bash })));
 }
