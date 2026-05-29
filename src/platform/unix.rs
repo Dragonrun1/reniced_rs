@@ -55,7 +55,7 @@ use std::io;
 /// # Example
 ///
 /// ```no_run
-/// # use your_crate::is_privileged;
+/// # use reniced::platform::is_privileged;
 /// if is_privileged() {
 ///     println!("Running as root. Can modify system-wide settings.");
 /// } else {
@@ -115,7 +115,7 @@ pub fn is_privileged() -> bool {
 /// # Example
 ///
 /// ```no_run
-/// # use your_crate::set_process_priority;
+/// # use reniced::platform::set_process_priority;
 /// # use std::io;
 /// # fn main() -> io::Result<()> {
 /// // Lower priority (nicer) for process 1234

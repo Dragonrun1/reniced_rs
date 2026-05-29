@@ -20,6 +20,8 @@
 // along with this program; if not, see <https://www.gnu.org/licenses/>.
 // ///////////////////////////////////////////////////////////////////////////
 
+// convert_oom_adj is re-exported from actions for backward compat;
+// the canonical source is platform::linux on Linux builds.
 use reniced::actions::convert_oom_adj;
 
 #[test]

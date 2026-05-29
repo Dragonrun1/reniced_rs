@@ -100,9 +100,10 @@ pub enum ParseRuleError {
 /// # Example
 ///
 /// ```no_run
-/// # use your_crate::{Cli, find_rulefile};
+/// # use reniced::cli::Cli;
+/// # use reniced::config::find_rulefile;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let cli = Cli::parse(); // Assume clap or similar
+/// let cli = Cli::parse_args(); // Assume clap or similar
 /// let config_path = find_rulefile(&cli)?;
 /// println!("Using config: {}", config_path.display());
 /// # Ok(())
@@ -150,7 +151,7 @@ pub fn find_rulefile(cli: &Cli) -> Result<PathBuf> {
 /// # Example
 ///
 /// ```
-/// # use your_crate::find_rulefile_inner;
+/// # use reniced::config::find_rulefile_inner;
 /// # use std::path::{Path, PathBuf};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Explicit path takes precedence
@@ -234,7 +235,7 @@ pub fn find_rulefile_inner(config: Option<&Path>, privileged: bool) -> Result<Pa
 /// ```
 ///
 /// ```no_run
-/// # use your_crate::read_rules;
+/// # use reniced::config::read_rules;
 /// # use std::path::Path;
 /// let rules = read_rules(Path::new("rules.conf"))?;
 /// println!("Loaded {} valid rules", rules.len());
@@ -318,7 +319,9 @@ pub fn read_rules(path: &Path) -> Result<Vec<Rule>> {
 /// # Example
 ///
 /// ```
-/// # use your_crate::{parse_rule, Rule, IoClass};
+/// # use reniced::config::parse_rule;
+/// # use reniced::model::Rule;
+/// # use reniced::model::IoClass;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Parse a rule: Nice -10, Best Effort IO level 4
 /// let rule = parse_rule("n-10 b4", "^firefox.*")?;

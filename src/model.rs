@@ -48,7 +48,7 @@ pub struct Rule {
 ///
 /// These classes determine the relative priority of a process's disk I/O operations.
 /// The kernel's I/O scheduler uses this to allocate bandwidth during contention.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IoClass {
     /// **Realtime**.
     ///
@@ -91,4 +91,32 @@ pub enum ProcessKind {
     Process,
     /// A thread belonging to a process.
     Thread,
+}
+
+impl ProcessEntry {
+    /// Constructs a [`ProcessEntry`] from a [`sysinfo::Process`] reference.
+    ///
+    /// This is the single canonical way to build a `ProcessEntry` from sysinfo data,
+    /// used by both `process::collect_entries` and `platform::linux::collect_threads`
+    /// to eliminate duplicated construction logic.
+    ///
+    /// # Arguments
+    ///
+    /// * `pid` - The numeric PID or TID to record.
+    /// * `process` - The sysinfo process reference to extract name, cmd, and exe from.
+    /// * `kind` - Whether this entry represents a main process or a thread.
+    pub fn from_sysinfo(pid: i32, process: &sysinfo::Process, kind: ProcessKind) -> Self {
+        use std::ffi::OsStr;
+        Self {
+            pid,
+            name: process.name().to_string_lossy().into_owned(),
+            cmd: process
+                .cmd()
+                .join(OsStr::new(" "))
+                .to_string_lossy()
+                .into_owned(),
+            exe: process.exe().map(|p| p.to_string_lossy().into_owned()),
+            kind,
+        }
+    }
 }

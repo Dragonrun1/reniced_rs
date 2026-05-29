@@ -21,7 +21,6 @@
 // ///////////////////////////////////////////////////////////////////////////
 
 use anyhow::Result;
-use std::ffi::OsStr;
 use sysinfo::System;
 
 use crate::model::{ProcessEntry, ProcessKind};
@@ -61,23 +60,16 @@ pub fn read_processes(include_threads: bool) -> Result<Vec<ProcessEntry>> {
 /// # Returns
 ///
 /// A vector of `ProcessEntry` objects, each marked as either `ProcessKind::Process` or `ProcessKind::Thread`.
-//noinspection DuplicatedCode
 pub fn collect_entries(system: &System, include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut entries = Vec::new();
 
     for (pid, process) in system.processes() {
         // Add the main process
-        entries.push(ProcessEntry {
-            pid: pid.as_u32() as i32,
-            name: process.name().to_string_lossy().into_owned(),
-            cmd: process
-                .cmd()
-                .join(OsStr::new(" "))
-                .to_string_lossy()
-                .into_owned(),
-            exe: process.exe().map(|p| p.to_string_lossy().into_owned()),
-            kind: ProcessKind::Process,
-        });
+        entries.push(ProcessEntry::from_sysinfo(
+            pid.as_u32() as i32,
+            process,
+            ProcessKind::Process,
+        ));
 
         // Conditionally collect threads on Linux
         if include_threads {
