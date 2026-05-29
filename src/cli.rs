@@ -22,7 +22,8 @@
 
 use std::path::PathBuf;
 
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 
 #[derive(Clone, Debug, ValueEnum)]
 pub enum MatchTarget {
@@ -46,8 +47,18 @@ pub enum LogTarget {
 
 #[derive(Debug, Parser)]
 #[command(name = "reniced")]
-#[command(version)]
+#[command(about, author, version)]
+#[command(help_template = "\
+{before-help}{name} {version} - {about}
+{author-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}
+")]
 pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+
     /// No-op mode: show what would be done without making changes
     #[arg(short = 'n')]
     pub noop: bool,
@@ -75,6 +86,17 @@ pub struct Cli {
     /// Alternate config file
     pub configfile: Option<PathBuf>,
 }
+
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    /// Generate shell completions
+    Completions {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
+}
+
 
 impl Cli {
     #[must_use]

@@ -23,11 +23,16 @@
 #![forbid(unsafe_op_in_unsafe_fn)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+
+use std::io;
 use anyhow::Result;
+use clap::CommandFactory;
+use clap_complete::{generate, Generator};
+use clap_version_flag::{colorful_version, parse_with_version};
 use log::{error, info, warn};
 
 use reniced::actions::apply_rules;
-use reniced::cli::Cli;
+use reniced::cli::{Cli, Commands};
 use reniced::config::{find_rulefile, read_rules};
 use reniced::logging::init as init_logging;
 use reniced::process::read_processes;
@@ -36,7 +41,13 @@ use reniced::process::read_processes;
 use reniced::platform::unix::is_privileged;
 
 fn main() -> Result<()> {
-    let cli = Cli::parse_args();
+    let version = colorful_version!();
+    let cli: Cli = parse_with_version(Cli::command(), &version)?;
+    // Handle the 'completions' subcommand
+    if let Some(Commands::Completions { shell }) = cli.command {
+        print_completions(shell, &mut Cli::command());
+        return Ok(());
+    }
 
     init_logging(&cli.log, cli.verbose)?;
 
@@ -83,4 +94,9 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn print_completions<G: Generator>(shell: G, cmd: &mut clap::Command) {
+    let bin_name = cmd.get_name().to_string();
+    generate(shell, cmd, bin_name, &mut io::stdout());
 }
