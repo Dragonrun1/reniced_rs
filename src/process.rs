@@ -32,6 +32,10 @@ use crate::platform::linux;
 pub fn read_processes(include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut system = System::new_all();
     system.refresh_all();
+    collect_entries(&system, include_threads)
+}
+
+pub fn collect_entries(system: &System, include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut entries = Vec::new();
 
     for (pid, process) in system.processes() {

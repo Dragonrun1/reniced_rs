@@ -46,11 +46,17 @@ use crate::model::{IoClass, Rule};
 use crate::platform::is_privileged;
 
 pub fn find_rulefile(cli: &Cli) -> Result<PathBuf> {
-    if let Some(path) = &cli.configfile {
-        return Ok(path.clone());
+    find_rulefile_inner(cli.configfile.as_deref(), is_privileged())
+}
+
+// Separated from find_rulefile so privilege status can be injected in tests
+// without requiring a real OS call or running as root.
+pub fn find_rulefile_inner(configfile: Option<&Path>, privileged: bool) -> Result<PathBuf> {
+    if let Some(path) = configfile {
+        return Ok(path.to_path_buf());
     }
 
-    if is_privileged() {
+    if privileged {
         return Ok(PathBuf::from("/etc/reniced.conf"));
     }
 
