@@ -24,16 +24,14 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
-use std::io;
-
 use anyhow::Result;
 use clap::CommandFactory;
 use clap_version_flag::{colorful_version, parse_with_version};
-
 use log::error;
 use reniced::cli::{Cli, Commands};
 use reniced::logging::init as init_logging;
 use reniced::run;
+use std::io;
 
 fn main() -> Result<()> {
     let version = colorful_version!();

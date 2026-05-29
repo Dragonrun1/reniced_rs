@@ -25,16 +25,43 @@ use std::ffi::OsStr;
 use sysinfo::System;
 
 use crate::model::{ProcessEntry, ProcessKind};
-
-#[cfg(target_os = "linux")]
 use crate::platform::linux;
 
+/// Reads a list of all currently running processes from the system.
+///
+/// This function creates a new `System` snapshot, refreshes all process information,
+/// and collects the main processes. If `include_threads` is true and the target is Linux,
+/// it also collects threads for each process.
+///
+/// # Arguments
+///
+/// * `include_threads` - If true, includes threads (TIDs) on Linux. Ignored on other platforms.
+///
+/// # Returns
+///
+/// * `Ok(Vec<ProcessEntry>)` containing all main processes, and threads if requested and supported.
+/// * `Err(...)` if the `sysinfo` operations fail (rare).
 pub fn read_processes(include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut system = System::new_all();
     system.refresh_all();
     collect_entries(&system, include_threads)
 }
 
+/// Collects `ProcessEntry` instances from a `System` snapshot.
+///
+/// Iterates over all processes in the `system` snapshot and creates a `ProcessEntry`
+/// for each main process. If `include_threads` is true and the target is Linux,
+/// it calls `linux::collect_threads` to append thread entries.
+///
+/// # Arguments
+///
+/// * `system` - A reference to a `sysinfo::System` snapshot with refreshed data.
+/// * `include_threads` - Flag to include threads (Linux only).
+///
+/// # Returns
+///
+/// A vector of `ProcessEntry` objects, each marked as either `ProcessKind::Process` or `ProcessKind::Thread`.
+//noinspection DuplicatedCode
 pub fn collect_entries(system: &System, include_threads: bool) -> Result<Vec<ProcessEntry>> {
     let mut entries = Vec::new();
 

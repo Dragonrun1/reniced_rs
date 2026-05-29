@@ -32,16 +32,14 @@ pub mod model;
 pub mod platform;
 pub mod process;
 
-use std::io;
-
-use anyhow::Result;
-use clap_complete::{Generator, generate};
-use log::{info, warn};
-
 use crate::actions::apply_rules;
 use crate::cli::Cli;
 use crate::config::{find_rulefile, read_rules};
 use crate::process::read_processes;
+use anyhow::Result;
+use clap_complete::{generate, Generator};
+use log::{info, warn};
+use std::io;
 
 #[cfg(target_os = "linux")]
 use crate::platform::unix::is_privileged;
@@ -95,7 +93,11 @@ pub fn run(cli: Cli) -> Result<()> {
 
 /// Write shell completions for the given shell to the provided writer.
 /// Pass `&mut io::stdout()` for production use, or `&mut Vec::new()` in tests.
-pub fn print_completions<G: Generator>(shell: G, cmd: &mut clap::Command, writer: &mut dyn io::Write) {
+pub fn print_completions<G: Generator>(
+    shell: G,
+    cmd: &mut clap::Command,
+    writer: &mut dyn io::Write,
+) {
     let bin_name = cmd.get_name().to_string();
     generate(shell, cmd, bin_name, writer);
 }

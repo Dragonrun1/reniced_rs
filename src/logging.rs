@@ -20,11 +20,25 @@
 // along with this program; if not, see <https://www.gnu.org/licenses/>.
 // ///////////////////////////////////////////////////////////////////////////
 
+use crate::cli::LogTarget;
 use anyhow::{Context, Result};
 use log::LevelFilter;
 
-use crate::cli::LogTarget;
-
+/// Initializes the global logger based on the specified target and verbosity.
+///
+/// This function configures the logging backend and filter level.
+/// - **Level**: `Debug` if `verbose` is true, otherwise `Warn`.
+/// - **Target**: Delegates to `init_stderr` or `init_system` based on `target`.
+///
+/// # Arguments
+///
+/// * `target` - The [`LogTarget`] (e.g., `Stderr`, `System`).
+/// * `verbose` - If true, sets the log level to `Debug`; otherwise, `Warn`.
+///
+/// # Returns
+///
+/// * `Ok(())` if the logger was successfully initialized.
+/// * `Err(...)` if `init_system` fails (e.g., cannot connect to syslog).
 pub fn init(target: &LogTarget, verbose: bool) -> Result<()> {
     let level = if verbose {
         LevelFilter::Debug
@@ -38,29 +52,42 @@ pub fn init(target: &LogTarget, verbose: bool) -> Result<()> {
     }
 }
 
+/// Initializes the `env_logger` backend for writing logs to `stderr`.
+///
+/// This function attempts to register `env_logger` as the global logger.
+/// It is idempotent: if registration fails (e.g., because a logger is already set),
+/// it is ignored, but the log level is always updated via `log::set_max_level`.
+///
+/// # Formatting
+///
+/// The output is configured to be terse, matching the original Perl tool:
+/// - No timestamps.
+/// - No module paths.
+/// - The log level is prefixed for `Warn` and `Error` messages.
 fn init_stderr(level: LevelFilter) -> Result<()> {
-    // Register the logger once; subsequent calls (e.g. in tests) will get
-    // SetLoggerError which we ignore — the important thing is that the level
-    // is always updated, so we set it unconditionally after the init attempt.
     let _ = env_logger::Builder::new()
         .filter_level(level)
-        // Match the terse output style of the original Perl code —
-        // no timestamps, no module paths, just the message.
         .format_timestamp(None)
         .format_module_path(false)
         .format_target(false)
-        // Prefix warn/error with the level so it's clear in a terminal;
-        // info/debug are noop-mode and verbose output so no prefix needed.
         .format_level(true)
         .try_init();
 
-    // Always update the max level regardless of whether init succeeded.
-    // This is safe to call multiple times and is what the tests rely on.
     log::set_max_level(level);
 
     Ok(())
 }
 
+/// Initializes the `syslog` backend for Unix-like systems.
+///
+/// This function connects to the local syslog daemon via a Unix domain socket
+/// (typically `/dev/log`). It uses `Formatter3164` with the `LOG_DAEMON` facility.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The connection to the syslog socket fails.
+/// - Registering the logger with the `log` crate fails.
 #[cfg(unix)]
 fn init_system(level: LevelFilter) -> Result<()> {
     use syslog::{BasicLogger, Facility, Formatter3164};
@@ -82,12 +109,17 @@ fn init_system(level: LevelFilter) -> Result<()> {
     Ok(())
 }
 
+/// Initializes the Windows Event Log backend.
+///
+/// This function first attempts to register the "reniced" source with the Event Log.
+/// If this fails (typically due to lack of admin rights), it falls back to `init_stderr`
+/// with a warning. If registration succeeds, it initializes the `winlog` logger.
+///
+/// # Errors
+///
+/// Returns an error only if `winlog::init` fails after a successful registration.
 #[cfg(windows)]
 fn init_system(level: LevelFilter) -> Result<()> {
-    // The Windows Event Log source must be registered before first use.
-    // winlog::register is idempotent and succeeds silently if already present.
-    // It requires elevation; if it fails we fall back to stderr with a warning
-    // rather than aborting — the tool can still run, just without Event Log.
     if let Err(e) = winlog::register("reniced") {
         eprintln!(
             "warning: could not register Windows Event Log source \
@@ -102,8 +134,3 @@ fn init_system(level: LevelFilter) -> Result<()> {
 
     Ok(())
 }
-
-// FreeBSD, OpenBSD, and any other non-Linux Unix currently lacks a syslog
-// backend distinct from the Unix one above — the syslog crate uses the same
-// Unix domain socket path on all *nix systems, so the cfg(unix) arm covers
-// all of them.
